@@ -1,12 +1,14 @@
 """
-#Q All of these animals are omnivorous except one.
-^ Snail
-A Fox
-B Mouse
-C Opossum
-D Snail
+This script converts quiz files in a directory to JSON format.
+Each quiz file contains multiple questions with the following format:
+#Q What is the capital of France?
+A Paris
+B London
+C Berlin
+D Madrid
+^ A
 
-The script reads each file, extracts questions, options, and the correct answers,
+The script reads each file, extracts questions, options, and correct answers,
 and writes the data to a JSON file in the output directory.
 
 Obtained all of the quiz questions from: https://github.com/uberspot/OpenTriviaQA.
@@ -15,17 +17,8 @@ Obtained all of the quiz questions from: https://github.com/uberspot/OpenTriviaQ
 import os
 import string
 import json
-import re  # For cleaning up unwanted characters
 
 ALPHABET = list(string.ascii_uppercase)
-
-
-def clean_text(text):
-    """
-    Clean up text by removing unwanted characters or random strings.
-    """
-    # Remove Unicode escape sequences and extra whitespace
-    return re.sub(r"\\u[0-9a-fA-F]{4}", "", text).strip()
 
 
 def convert_quiz_files_to_json(directory):
@@ -71,32 +64,25 @@ def convert_quiz_files_to_json(directory):
 
             for line in lines:
                 if line.startswith("#Q "):
-                    question["question"] = clean_text(line[3:].strip())
+                    question["question"] = line[3:].strip()
                     question["category"] = os.path.basename(file)
                     question["index"] = question_index
 
                 elif line[0] in ALPHABET:
                     if not question.get("options"):
                         question["options"] = []
-                    question["options"].append(clean_text(line[2:].strip()))
+                    question["options"].append(line[2:].strip())
 
                 elif line.startswith("^ "):
-                    question["correct_answer"] = clean_text(line[2:].strip())
+                    question["correct_answer"] = line[2:].strip()
 
                 elif line.strip() == "" and question != {}:
-                    if len(question.get("options", [])) == 4:
-                        questions.append(question)
-                        question_index += 1
-                    else:
-                        print(
-                            f"Skipping question {question_index} due to insufficient options."
-                        )
-
-                    # Reset for the next question
+                    questions.append(question)
                     question = {}
+                    question_index += 1
 
-            # Add the last question if it exists and has 4 options
-            if question != {} and len(question.get("options", [])) == 4:
+            # Add the last question if it exists
+            if question != {}:
                 questions.append(question)
 
             # Create output filename in the json_files directory
